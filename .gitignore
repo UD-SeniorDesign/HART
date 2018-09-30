@@ -68,3 +68,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Stupid Mac files
+*DS_Store*
