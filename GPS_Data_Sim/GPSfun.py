@@ -12,6 +12,7 @@ import time
 import csv
 import sys, traceback
 import json
+import re
 
 
 # Function definitions
@@ -111,7 +112,7 @@ def pullInCSV(filename):
         for record in dataArr:
             for i in range(len(record)):
                 if i<2:
-                    record[i]=float(record[i])
+                    record[i]=float(re.sub('[^0-9,\-,\.]','',record[i]))
                 else:
                     record[i]=int(record[i])
         trainingData.close()
@@ -180,15 +181,11 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
         time = locOne[2]
         numSample = round(time*samplesPerHour)
 
-        latDif = abs(locTwo[0]-locOne[0])
-        longDif = abs(locTwo[1]-locOne[1])
+        latDif = locTwo[0]-locOne[0]
+        longDif = locTwo[1]-locOne[1]
 
         latSampleIncr = latDif/numSample
         longSampleIncr = longDif/numSample
-        if (locTwo[0] < locOne[0]):
-            latSampleIncr = 0-latSampleIncr
-        if (locTwo[1] < locOne[1]):
-            latSampleIncr = 0-latSampleIncr
         
         sampleLat = locOne[0]
         sampleLong = locOne[1]
