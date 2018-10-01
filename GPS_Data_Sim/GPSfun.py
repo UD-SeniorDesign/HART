@@ -234,8 +234,11 @@ finalTrainingDataOut = genGPSdata(numStops,stopArr,date,time,samples)
 outFile = str(datetime.datetime.now())[:-4].replace(" ","_t").replace(":","-").replace(".","-")+ inFile.replace("dataIn/","_")
 
 fOut = open('dataOut/CSV/GPSsimV0_d'+ outFile,'w')
+numLines = 0
+
 for line in finalTrainingDataOut:
     fOut.write(str(line).replace("[","").replace("]","")+"\n")
+    numLines += 1
 fOut.close()
 
 
@@ -245,6 +248,9 @@ jsonfile = open('dataOut/JSON/GPSsimV0_d'+outFile[:-4]+'.json', 'w')
 
 fieldnames = ("Latitude","Longitude","Time")
 reader = csv.DictReader( csvfile, fieldnames)
-for row in reader:
+jsonfile.write('[')
+for k,row in enumerate(reader):
     json.dump(row, jsonfile)
-    jsonfile.write('\n')
+    if ( k+1 != numLines):
+        jsonfile.write(',\n')
+jsonfile.write(']')
