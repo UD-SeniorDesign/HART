@@ -264,7 +264,9 @@ fOut.close()
 csvfile = open('dataOut/CSV/'+ outFile, 'r')
 jsonfile = open('dataOut/JSON/'+outFile[:-4]+'.json', 'w')
 
+
 fieldnames = ("Latitude","Longitude","Time","Elevation","UTM Easting","UTM Northing","UTM Zone")
+
 reader = csv.DictReader( csvfile, fieldnames)
 jsonfile.write('[')
 for k,row in enumerate(reader):
