@@ -13,7 +13,7 @@ import csv
 import sys, traceback
 import json
 import re
-
+import utm
 
 # Function definitions
 def isValidTimeFormat(userDate,userTime):
@@ -174,6 +174,7 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
     timeSample = 0
     timeIncr = 1
     elSample = 0
+    utmLoc = []
 
     for stop in range(1,numStops):
         locOne = stopLocationArray[stop-1]
@@ -205,7 +206,8 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
             sampleLong += longSampleIncr
             timeSample += timeIncr
             elSample += elSampleIncr
-            GPSdataArray.append([sampleLat,sampleLong,currentTime,elSample])
+            utmLoc = utm.from_latlon(sampleLat,sampleLong)
+            GPSdataArray.append([sampleLat,sampleLong,currentTime,elSample,utmLoc[0],utmLoc[1],str(utmLoc[2])+str(utmLoc[3])])
             
     
     # print(GPSdataArray)
@@ -261,7 +263,7 @@ fOut.close()
 csvfile = open('dataOut/CSV/GPSsimV0_d'+ outFile, 'r')
 jsonfile = open('dataOut/JSON/GPSsimV0_d'+outFile[:-4]+'.json', 'w')
 
-fieldnames = ("Latitude","Longitude","Time","Elevation")
+fieldnames = ("Latitude","Longitude","Time","Elevation","UTM Easting","UTM Northing","UTM Zone")
 reader = csv.DictReader( csvfile, fieldnames)
 jsonfile.write('[')
 for k,row in enumerate(reader):
