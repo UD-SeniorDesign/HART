@@ -261,7 +261,7 @@ fOut.close()
 csvfile = open('dataOut/CSV/GPSsimV0_d'+ outFile, 'r')
 jsonfile = open('dataOut/JSON/GPSsimV0_d'+outFile[:-4]+'.json', 'w')
 
-fieldnames = ("Latitude","Longitude","Time")
+fieldnames = ("Latitude","Longitude","Time","Elevation")
 reader = csv.DictReader( csvfile, fieldnames)
 jsonfile.write('[')
 for k,row in enumerate(reader):
