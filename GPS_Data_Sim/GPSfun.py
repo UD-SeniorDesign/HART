@@ -158,8 +158,8 @@ def timeIncrement(currentTime,currentDate):
 
 def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
     GPSdataArray = []
-    locOne = [0,0,0] #lat,long, speed after this point
-    locTwo = [0,0,0]
+    locOne = [0,0,0,0] #lat,long, speed after this point
+    locTwo = [0,0,0,0]
     latDif = 0
     longDif = 0
     latSampleIncr = 0
@@ -173,10 +173,13 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
     currentDate = startDate
     timeSample = 0
     timeIncr = 1
+    elSample = 0
 
     for stop in range(1,numStops):
         locOne = stopLocationArray[stop-1]
         locTwo = stopLocationArray[stop]
+        elOne = locOne[3]
+        elTwo = locTwo[3]
         # distance = getDistance(locOne[0],locOne[1],locTwo[0],locTwo[1])
         time = locOne[2]
         numSample = round(time*samplesPerHour)
@@ -184,18 +187,26 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
         latDif = locTwo[0]-locOne[0]
         longDif = locTwo[1]-locOne[1]
 
+        elevationDiff = getElevationDiff(elOne,elTwo)
+        elSampleIncr = elevationDiff/numSample
+
         latSampleIncr = latDif/numSample
         longSampleIncr = longDif/numSample
         
         sampleLat = locOne[0]
         sampleLong = locOne[1]
         
+        elSample = elOne
+        
+
         for s in range(numSample):
             currentTime,currentDate=timeIncrement(currentTime,currentDate)
             sampleLat += latSampleIncr
             sampleLong += longSampleIncr
             timeSample += timeIncr
-            GPSdataArray.append([sampleLat,sampleLong,currentTime])
+            elSample += elSampleIncr
+            GPSdataArray.append([sampleLat,sampleLong,currentTime,elSample])
+            
     
     # print(GPSdataArray)
     return GPSdataArray
@@ -220,6 +231,10 @@ def getDistance(latOne,longOne,latTwo,longTwo):
     distance = R * c
     return distance
 
+def getElevationDiff(elOne,elTwo):
+    return elTwo-elOne
+
+
 
 # Gather neccesary inputs and establish global variables
 inFile = sys.argv[1]
@@ -234,8 +249,11 @@ finalTrainingDataOut = genGPSdata(numStops,stopArr,date,time,samples)
 outFile = str(datetime.datetime.now())[:-4].replace(" ","_t").replace(":","-").replace(".","-")+ inFile.replace("dataIn/","_")
 
 fOut = open('dataOut/CSV/GPSsimV0_d'+ outFile,'w')
+numLines = 0
+
 for line in finalTrainingDataOut:
     fOut.write(str(line).replace("[","").replace("]","")+"\n")
+    numLines += 1
 fOut.close()
 
 
@@ -245,6 +263,9 @@ jsonfile = open('dataOut/JSON/GPSsimV0_d'+outFile[:-4]+'.json', 'w')
 
 fieldnames = ("Latitude","Longitude","Time")
 reader = csv.DictReader( csvfile, fieldnames)
-for row in reader:
+jsonfile.write('[')
+for k,row in enumerate(reader):
     json.dump(row, jsonfile)
-    jsonfile.write('\n')
+    if ( k+1 != numLines):
+        jsonfile.write(',\n')
+jsonfile.write(']')
