@@ -10,6 +10,8 @@ public class spawnTarget : MonoBehaviour {
     public AbstractMap mapManager;
 
     public GameObject player;
+    public gpsData currGPS;
+    private int idx = 0;
 
     // Use this for initialization
     void Start () {
@@ -28,11 +30,14 @@ public class spawnTarget : MonoBehaviour {
        
         
     }
+
     // Update is called once per frame
     void Update () {
-        Vector3 pos = mapManager.GeoToWorldPosition(new Mapbox.Utils.Vector2d(39.6677478093179f, -75.7518574609092f));
-        //Debug.Log(pos);
-        pos.y += player.GetComponent<Renderer>().bounds.size.y/2;
+        
+        currGPS = this.GetComponent<dataController>().getGPS(idx++);
+        
+        Vector3 pos = mapManager.GeoToWorldPosition(new Mapbox.Utils.Vector2d(double.Parse(currGPS.Latitude), double.Parse(currGPS.Longitude)));
+        pos.y += player.GetComponent<Renderer>().bounds.size.y / 2;// +float.Parse(currGPS.Elevation);
         player.transform.position = pos;
     }
 }
