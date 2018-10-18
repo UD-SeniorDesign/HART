@@ -175,6 +175,9 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
     timeIncr = 1
     elSample = 0
     utmLoc = []
+    RCS =
+    
+
 
     for stop in range(1,numStops):
         locOne = stopLocationArray[stop-1]
