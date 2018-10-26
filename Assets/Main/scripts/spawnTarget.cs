@@ -32,7 +32,7 @@ public class spawnTarget : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update () {
+    void FixedUpdate () {
         
         currGPS = this.GetComponent<dataController>().getGPS(idx++);
         
