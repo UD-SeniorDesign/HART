@@ -175,7 +175,7 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
     timeIncr = 1
     elSample = 0
     utmLoc = []
-    RCS =
+    RCS = 0
     
 
 
@@ -277,3 +277,4 @@ for k,row in enumerate(reader):
     if ( k+1 != numLines):
         jsonfile.write(',\n')
 jsonfile.write(']')
+
