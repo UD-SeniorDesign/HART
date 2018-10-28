@@ -256,7 +256,7 @@ outFile = inFile.replace("dataIn/","").replace(".csv","")+"_GPSsimV0_d"+str(date
 
 fOut = open('dataOut/CSV/'+ outFile,'w')
 jsonfile = open('dataOut/JSON/'+outFile[:-4]+'.json', 'w')
-fieldnames = ("Latitude","Longitude","Time","Elevation","UTM-E","UTM-N","UTM-Z")
+fieldnames = ("Latitude","Longitude","Time","Elevation","UTME","UTMN","UTMZ")
 numLines = 0
 
 jsonfile.write("[")
@@ -272,37 +272,10 @@ for line in finalTrainingDataOut:
         else:
             newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+",")
 
-    print(str(numLines)+"|"+str(len(finalTrainingDataOut)))
+    # print(str(numLines)+"|"+str(len(finalTrainingDataOut)))
     if (numLines != len(finalTrainingDataOut)):
         jsonfile.write(newLine)
     else:
         jsonfile.write(newLine[:-2])
 jsonfile.write("]")
 fOut.close()
-
-
-
-csvfile = open('dataOut/CSV/'+ outFile, 'r')
-
-
-
-
-
-# reader = csv.DictReader( csvfile, fieldnames)
-# jsonfile.write('[')
-# for k,row in enumerate(reader):
-#     cat print(row[fieldnames[k]])
-#     if ( k+1 != numLines):
-#         jsonfile.write(',\n')
-# jsonfile.write(']')
-
-# for line in finalTrainingDataOut:
-#     tmpArr = line
-#     newLine = "{"
-#     for i in range(7):
-#         if (i>5):
-#             newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+"},")
-#         else:
-#             newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+",")
-#     print(newLine)
-        
