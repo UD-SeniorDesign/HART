@@ -255,26 +255,54 @@ finalTrainingDataOut = genGPSdata(numStops,stopArr,date,time,samples)
 outFile = inFile.replace("dataIn/","").replace(".csv","")+"_GPSsimV0_d"+str(datetime.datetime.now())[:-4].replace(" ","_t").replace(":","-").replace(".","-")
 
 fOut = open('dataOut/CSV/'+ outFile,'w')
+jsonfile = open('dataOut/JSON/'+outFile[:-4]+'.json', 'w')
+fieldnames = ("Latitude","Longitude","Time","Elevation","UTM-E","UTM-N","UTM-Z")
 numLines = 0
 
+jsonfile.write("[")
 for line in finalTrainingDataOut:
     fOut.write(str(line).replace("[","").replace("]","")+"\n")
     numLines += 1
+
+    tmpArr = line
+    newLine = "{"
+    for i in range(7):
+        if (i>5):
+            newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+"},\n")
+        else:
+            newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+",")
+
+    print(str(numLines)+"|"+str(len(finalTrainingDataOut)))
+    if (numLines != len(finalTrainingDataOut)):
+        jsonfile.write(newLine)
+    else:
+        jsonfile.write(newLine[:-2])
+jsonfile.write("]")
 fOut.close()
 
 
 
 csvfile = open('dataOut/CSV/'+ outFile, 'r')
-jsonfile = open('dataOut/JSON/'+outFile[:-4]+'.json', 'w')
 
 
-fieldnames = ("Latitude","Longitude","Time","Elevation","UTM Easting","UTM Northing","UTM Zone")
 
-reader = csv.DictReader( csvfile, fieldnames)
-jsonfile.write('[')
-for k,row in enumerate(reader):
-    json.dump(row, jsonfile)
-    if ( k+1 != numLines):
-        jsonfile.write(',\n')
-jsonfile.write(']')
 
+
+# reader = csv.DictReader( csvfile, fieldnames)
+# jsonfile.write('[')
+# for k,row in enumerate(reader):
+#     cat print(row[fieldnames[k]])
+#     if ( k+1 != numLines):
+#         jsonfile.write(',\n')
+# jsonfile.write(']')
+
+# for line in finalTrainingDataOut:
+#     tmpArr = line
+#     newLine = "{"
+#     for i in range(7):
+#         if (i>5):
+#             newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+"},")
+#         else:
+#             newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+",")
+#     print(newLine)
+        
