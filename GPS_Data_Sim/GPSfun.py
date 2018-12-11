@@ -210,7 +210,7 @@ def genGPSdata(numStops,stopLocationArray,startDate,startTime,samplesPerHour):
             timeSample += timeIncr
             elSample += elSampleIncr
             utmLoc = utm.from_latlon(sampleLat,sampleLong)
-            GPSdataArray.append([sampleLat,sampleLong,currentTime,elSample,utmLoc[0],utmLoc[1],str(utmLoc[2])+str(utmLoc[3])])
+            GPSdataArray.append([sampleLat,sampleLong,'\"' + currentTime + '\"',elSample,utmLoc[0],utmLoc[1],'\"' + str(utmLoc[2])+str(utmLoc[3]) + '\"' ])
             
     
     # print(GPSdataArray)
@@ -268,9 +268,9 @@ for line in finalTrainingDataOut:
     newLine = "{"
     for i in range(7):
         if (i>5):
-            newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+"},\n")
+            newLine+=(' \"'+fieldnames[i]+'\" :'+str(tmpArr[i])+" },\n")
         else:
-            newLine+=('\"'+fieldnames[i]+'\":'+str(tmpArr[i])+",")
+            newLine+=(' \"'+fieldnames[i]+'\" :'+str(tmpArr[i])+" ,")
 
     # print(str(numLines)+"|"+str(len(finalTrainingDataOut)))
     if (numLines != len(finalTrainingDataOut)):
