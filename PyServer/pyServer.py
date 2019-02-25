@@ -12,6 +12,7 @@ import json
 from datetime import datetime as dt
 from datetime import timedelta as td
 import threading
+from threading import Timer,Thread,Event
 
 ##########################################################################################
 # CONSTANTS
@@ -23,19 +24,29 @@ demoLoopData = []
 ##########################################################################################
 # FUNCTIONS
 ##########################################################################################
+class tickThread(Thread):
+    def __init__(self, event):
+        Thread.__init__(self)
+        self.stopped = event
+
+    def run(self):
+        global tick
+        while not self.stopped.wait(1):
+            print(str(tick) + " | " + str(dt.now()))
+            tick += 1
+            # call a function
+
 
 # Define run behavior
 def run():
     print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
     print("server:",handler.server_version,"system:",handler.sys_version)
 
-    # t1 = threading.Thread(target=ticker)
-    # t2 = threading.Thread(target=myServer.serve_forever)
+    stopFlag = Event()
+    thread = tickThread(stopFlag)
+    thread.start()
+    
     try:
-        # t1.start()
-        # t2.start()
-        # t1.join()
-        # t2.join()
         myServer.serve_forever()
     except KeyboardInterrupt:
         pass
@@ -58,20 +69,6 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     r = requests.get('https://opensky-network.org/api/states/all?' + laminStr + lamaxStr + lominStr + lomaxStr)
     # print(r.text)
     # print(r.json())
-    return
-
-def ticker():
-    print("ticker called")
-    global prevTickTime
-    global tick
-
-    currentTime = dt.now()
-    timeDif = currentTime - prevTickTime
-    
-    if (currentTime != prevTickTime):
-        tick += timeDif.seconds
-        prevTickTime = currentTime
-        print("TICK: " + str(tick) + " | TIME:" + str(dt.now()))
     return
 
 def readDemoLoopDataFromFile():
@@ -132,14 +129,14 @@ class Serv(handler):
                 print("VARIABLES START AT INDEX: " + str(varStart))
                 print(opts)
                 
-                getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
+                # getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
                 
-                ticker()
+                payload = 'tick: ' + str(tick)
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
                 self.end_headers()
-                self.wfile.write(bytes('tick: ' + str(tick),'utf-8'))
+                self.wfile.write(bytes(payload,'utf-8'))
                 print("response sent:  some damn message")
             
             except:
