@@ -6,6 +6,6 @@ while True:
     # print(dt.now().date())
     time.sleep(360)
     try:
-        sub.call("rm nohup.out")
+        sub.call(["rm","nohup.out"])
     except:
         pass
