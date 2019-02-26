@@ -20,6 +20,7 @@ from threading import Timer,Thread,Event
 tick = 0
 prevTickTime = dt.now()
 demoLoopData = []
+readMe = ""
 
 ##########################################################################################
 # FUNCTIONS
@@ -35,24 +36,6 @@ class tickThread(Thread):
             print(str(tick) + " | " + str(dt.now()))
             tick += 1
             # call a function
-
-
-# Define run behavior
-def run():
-    print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
-    print("server:",handler.server_version,"system:",handler.sys_version)
-
-    stopFlag = Event()
-    thread = tickThread(stopFlag)
-    thread.start()
-    
-    try:
-        myServer.serve_forever()
-    except KeyboardInterrupt:
-        pass
-
-    myServer.server_close()
-    print(time.asctime(),"Server Stopped - %:%s" % (hostName,hostPort))
 
 def handleLiveTargetsRequests():
     return
@@ -75,10 +58,47 @@ def readDemoLoopDataFromFile():
     fin = open("Data/fly-madison_GPSsimV0_d2018-12-03_t22-20-2.json",'r')
     demoData = fin.read()
     fin.close()
-    # print(len(demoData))
     dd = demoData[1:-1].split('\n')
-    # print(len(dd))
-    return dd
+    ddl = len(dd)
+    print("Read in " + str(ddl) + " lines of demo data.")
+    return dd,ddl
+
+# Reads in the error html
+def readInNope():
+    fin = open("nope.html")
+    nope = fin.read()
+    fin.close()
+    print(nope)
+    return nope
+
+# Reads in the readme html
+def readInReadMe():
+    fin = open("readme.html")
+    readme = fin.read()
+    fin.close()
+    print(readme)
+    return readme
+
+# Define run behavior
+def run():
+    print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
+    print("server:",handler.server_version,"system:",handler.sys_version)
+
+    stopFlag = Event()
+    thread = tickThread(stopFlag)
+    thread.start()
+    
+    try:
+        myServer.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    myServer.server_close()
+    print(time.asctime(),"Server Stopped - %:%s" % (hostName,hostPort))
+
+
+# def payloadBuilder(optionDict):
+#     optionDict[]
 
 ##########################################################################################
 # SERVER SETUP
@@ -91,10 +111,12 @@ hostPort = int(sys.argv[2]) #8000
 # Define handler
 handler = http.server.BaseHTTPRequestHandler
 
-#Pull in demo loop data
+# Pull in demo loop data
+demoData,demoDataLength = readDemoLoopDataFromFile()
 
-
-
+# Pull in the read me
+readMe = readInReadMe()
+nope = readInNope()
 
 # Create class and specify how to handle GET requests
 class Serv(handler):
@@ -114,24 +136,50 @@ class Serv(handler):
         # gets information about the request from the path used
         urlPath = str(self.path)[1:]
         pathArr = []
-        method = self.command
                 
         # ignore the favicon request from browsers
         if (urlPath == "favicon.ico"):
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
+
+        elif ('readme' in urlPath):
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(bytes(readMe,'utf-8'))
+            print("response sent:  read me")
+
+        elif (urlPath[:4]!='data'):
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(bytes(nope,'utf-8'))
+            print("response sent:  bad format")
+
         else:
             try:
+                # find where the variables start
                 varStart = urlPath.find("?")
-                opts = urlPath[varStart + 1:].split("&")
-                
-                print("VARIABLES START AT INDEX: " + str(varStart))
+
+                # pull out variables from URL
+                opts = urlPath[varStart + 1:].split("&")        
+                print("OPTIONS RECEIVED: ",end="")
                 print(opts)
-                
+
+                optionDict = dict()
+
+                for o in opts:
+                    tmpO = o.split("=")
+                    optionDict[tmpO[0]] = tmpO[1]
+
+                if (optionDict['demoLoop'] == '1'):
+                    demoIndex = tick % demoDataLength
+                    payload = demoData[demoIndex]
+                    
+                # payload = payloadBuilder(optionDict)
                 # getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
-                
-                payload = 'tick: ' + str(tick)
+                # payload = 'tick: ' + str(tick)
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
@@ -143,7 +191,7 @@ class Serv(handler):
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
                 self.end_headers()
-                self.wfile.write(bytes('bad format','utf-8'))
+                self.wfile.write(bytes(nope,'utf-8'))
                 print("response sent:  bad format")
 
 # Create a server instance
