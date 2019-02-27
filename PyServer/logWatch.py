@@ -3,8 +3,8 @@ import time
 import subprocess as sub
 
 while True:
-    print(dt.now().date())
-    time.sleep(3600)
+    # print(dt.now().date())
+    time.sleep(360)
     try:
         sub.call(["rm","nohup.out"])
     except:
