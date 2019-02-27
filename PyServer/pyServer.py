@@ -50,9 +50,9 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     lomaxStr = 'lomax=' + str(lomax)
 
     r = requests.get('https://opensky-network.org/api/states/all?' + laminStr + lamaxStr + lominStr + lomaxStr)
-    # print(r.text)
-    # print(r.json())
-    return
+    
+    return r.json()
+
 
 def readDemoLoopDataFromFile():
     fin = open("Data/fly-madison_GPSsimV0_d2018-12-03_t22-20-2.json",'r')
@@ -96,8 +96,24 @@ def run():
     myServer.server_close()
     print(time.asctime(),"Server Stopped - %:%s" % (hostName,hostPort))
 
+def parseOpenSky(osResult):
+    payload = ""
+
+    for i in osResult['states']:
+    
+        elevation = str(i[7])
+
+        if ((elevation == "None") or (len(elevation) == 0)):
+            print(elevation)
+            elevation = str(i[13])
+
+        if (elevation != "None"):
+            payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
+
+    return payload[:-1]
 
 def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
+    #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
     if (optionDict['demoLoop'] == '1'):
@@ -109,10 +125,26 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
         demoIndex2 = (tick+30) % demoDataLength
         payload += ',{"id":"demoLoop2",'
         payload += demoData[demoIndex2].rstrip(",")[1:]
-    
+
+        
+    try:
+        if (optionDict['commercialFlights'] == '1'):
+            
+            lomin = optionDict['lngMin']
+            lomax = optionDict['lngMax']
+            lamin = optionDict['latMin']
+            lamax = optionDict['latMax']
+
+            osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
+            payload += "," + parseOpenSky(osResult)
+    except:
+        pass
+
     payload += ']}'
 
     return payload
+
+
 
 
 ##########################################################################################
@@ -130,8 +162,8 @@ handler = http.server.BaseHTTPRequestHandler
 demoData,demoDataLength = readDemoLoopDataFromFile()
 
 # Pull in the read me
-readMe = readInReadMe()
-nope = readInNope()
+# readMe = readInReadMe()
+# nope = readInNope()
 
 # Create class and specify how to handle GET requests
 class Serv(handler):
@@ -159,6 +191,8 @@ class Serv(handler):
             self.end_headers()
 
         elif ('readme' in urlPath):
+            readMe = readInReadMe()
+
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
@@ -166,6 +200,8 @@ class Serv(handler):
             print("response sent:  read me")
 
         elif (urlPath[:4]!='data'):
+            nope = readInNope()
+            
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
@@ -188,15 +224,9 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                # if (optionDict['demoLoop'] == '1'):
-                #     demoIndex = tick % demoDataLength
-                #     payload = demoData[demoIndex]
-
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick)
 
-                # payload = payloadBuilder(optionDict)
-                # getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
-                # payload = 'tick: ' + str(tick)
+                
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
