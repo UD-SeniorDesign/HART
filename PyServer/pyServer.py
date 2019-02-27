@@ -20,7 +20,6 @@ from threading import Timer,Thread,Event
 tick = 0
 prevTickTime = dt.now()
 demoLoopData = []
-readMe = ""
 
 ##########################################################################################
 # FUNCTIONS
@@ -112,7 +111,7 @@ def parseOpenSky(osResult):
 
     return payload[:-1]
 
-def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
+def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord):
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
@@ -129,20 +128,25 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
         
     try:
         if (optionDict['commercialFlights'] == '1'):
-            
-            lomin = optionDict['lngMin']
-            lomax = optionDict['lngMax']
-            lamin = optionDict['latMin']
-            lamax = optionDict['latMax']
 
-            osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
-            payload += "," + parseOpenSky(osResult)
+            if ((tick%10) == 1):
+                lomin = optionDict['lngMin']
+                lomax = optionDict['lngMax']
+                lamin = optionDict['latMin']
+                lamax = optionDict['latMax']
+
+                osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
+                payload += "," + parseOpenSky(osResult)
+                currentOpenSkyRecord = payload
+
+            else:
+                payload += currentOpenSkyRecord
     except:
         pass
 
     payload += ']}'
 
-    return payload
+    return payload,currentOpenSkyRecord
 
 
 
@@ -165,6 +169,8 @@ demoData,demoDataLength = readDemoLoopDataFromFile()
 # readMe = readInReadMe()
 # nope = readInNope()
 
+currentOpenSkyRecord = ""
+
 # Create class and specify how to handle GET requests
 class Serv(handler):
     def _set_headers(self):
@@ -181,6 +187,7 @@ class Serv(handler):
 
     def do_GET(self):
         # gets information about the request from the path used
+        global currentOpenSkyRecord
         urlPath = str(self.path)[1:]
         pathArr = []
                 
@@ -201,7 +208,7 @@ class Serv(handler):
 
         elif (urlPath[:4]!='data'):
             nope = readInNope()
-            
+
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
@@ -224,9 +231,7 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick)
-
-                
+                payload,currentOpenSkyRecord = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
@@ -235,6 +240,8 @@ class Serv(handler):
                 print("response sent:  some damn message")
             
             except:
+                nope = readInNope()
+
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
                 self.end_headers()
