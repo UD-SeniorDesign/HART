@@ -106,8 +106,9 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
         payload += demoData[demoIndex].rstrip(",")[1:]
 
         #addinga second target
+        demoIndex2 = (tick+30) % demoDataLength
         payload += ',{"id":"demoLoop2",'
-        payload += demoData[demoIndex+30].rstrip(",")[1:]
+        payload += demoData[demoIndex2].rstrip(",")[1:]
     
     payload += ']}'
 
