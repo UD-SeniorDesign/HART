@@ -97,8 +97,18 @@ def run():
     print(time.asctime(),"Server Stopped - %:%s" % (hostName,hostPort))
 
 
-# def payloadBuilder(optionDict):
-#     optionDict[]
+def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
+    payload = '{"tick":' + str(tick) + ',"targets":['
+
+    if (optionDict['demoLoop'] == '1'):
+        demoIndex = tick % demoDataLength
+        payload += '"demoLoop":'
+        payload += demoData[demoIndex].rstrip(",")
+    
+    payload += ']}'
+
+    return payload
+
 
 ##########################################################################################
 # SERVER SETUP
@@ -173,10 +183,12 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                if (optionDict['demoLoop'] == '1'):
-                    demoIndex = tick % demoDataLength
-                    payload = demoData[demoIndex]
-                    
+                # if (optionDict['demoLoop'] == '1'):
+                #     demoIndex = tick % demoDataLength
+                #     payload = demoData[demoIndex]
+
+                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick)
+
                 # payload = payloadBuilder(optionDict)
                 # getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
                 # payload = 'tick: ' + str(tick)
