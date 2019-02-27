@@ -102,8 +102,8 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick):
 
     if (optionDict['demoLoop'] == '1'):
         demoIndex = tick % demoDataLength
-        payload += '"demoLoop":'
-        payload += demoData[demoIndex].rstrip(",")
+        payload += '{"id":"demoLoop",'
+        payload += demoData[demoIndex].rstrip(",")[1:]
     
     payload += ']}'
 
