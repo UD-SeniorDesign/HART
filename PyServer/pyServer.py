@@ -157,16 +157,18 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
     # except:
     #     pass
 
-    payload += currentOpenSkyRecord
+    payload += "," + currentOpenSkyRecord
     payload += ']}'
 
     return payload
 
 def openSkyFetchThread():
-    print("OSFT")
     global currentOpenSkyRecord
-    osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
-    currentOpenSkyRecord = parseOpenSky(osResult)
+    print("OSFT")
+    print(lomin,lomax,lamin,lamax)
+    if (lomin+lomax+lamin+lamax != "0000"):
+        osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
+        currentOpenSkyRecord = parseOpenSky(osResult)
 
 ##########################################################################################
 # SERVER SETUP
