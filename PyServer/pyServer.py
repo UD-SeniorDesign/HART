@@ -20,6 +20,11 @@ from threading import Timer,Thread,Event
 tick = 0
 prevTickTime = dt.now()
 demoLoopData = []
+currentOpenSkyRecord = ""
+lomin = 0
+lomax = 0
+lamin = 0
+lamax = 0
 
 ##########################################################################################
 # FUNCTIONS
@@ -31,16 +36,21 @@ class tickThread(Thread):
 
     def run(self):
         global tick
+        # global currentOpenSkyRecord
         while not self.stopped.wait(1):
             print(str(tick) + " | " + str(dt.now()))
             tick += 1
-            # call a function
 
-def handleLiveTargetsRequests():
-    return
+class openSkyThread(Thread):
+    def __init__(self, event):
+        Thread.__init__(self)
+        self.stopped = event
 
-def handleLoopTargerRequest():
-    return
+    def run(self):
+        global currentOpenSkyRecord
+        while not self.stopped.wait(10):
+            openSkyFetchThread()
+
 
 def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     laminStr = 'lamin=' + str(lamin) + '&'
@@ -49,7 +59,6 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     lomaxStr = 'lomax=' + str(lomax)
 
     r = requests.get('https://opensky-network.org/api/states/all?' + laminStr + lamaxStr + lominStr + lomaxStr)
-    
     return r.json()
 
 
@@ -67,7 +76,7 @@ def readInNope():
     fin = open("nope.html")
     nope = fin.read()
     fin.close()
-    print(nope)
+    # print(nope)
     return nope
 
 # Reads in the readme html
@@ -75,7 +84,7 @@ def readInReadMe():
     fin = open("readme.html")
     readme = fin.read()
     fin.close()
-    print(readme)
+    # print(readme)
     return readme
 
 # Define run behavior
@@ -83,10 +92,14 @@ def run():
     print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
     print("server:",handler.server_version,"system:",handler.sys_version)
 
-    stopFlag = Event()
-    thread = tickThread(stopFlag)
-    thread.start()
-    
+    tickStopFlag = Event()
+    tThread = tickThread(tickStopFlag)
+    tThread.start()
+
+    openSkyStopFlag = Event()
+    osThread = openSkyThread(openSkyStopFlag)
+    osThread.start()
+
     try:
         myServer.serve_forever()
     except KeyboardInterrupt:
@@ -103,7 +116,6 @@ def parseOpenSky(osResult):
         elevation = str(i[7])
 
         if ((elevation == "None") or (len(elevation) == 0)):
-            print(elevation)
             elevation = str(i[13])
 
         if (elevation != "None"):
@@ -126,30 +138,35 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
         payload += demoData[demoIndex2].rstrip(",")[1:]
 
         
-    try:
-        if (optionDict['commercialFlights'] == '1'):
+    # try:
+    #     if (optionDict['commercialFlights'] == '1'):
 
-            if ((tick%10) == 1):
-                lomin = optionDict['lngMin']
-                lomax = optionDict['lngMax']
-                lamin = optionDict['latMin']
-                lamax = optionDict['latMax']
+    #         if ((tick%10) == 1):
+    #             lomin = optionDict['lngMin']
+    #             lomax = optionDict['lngMax']
+    #             lamin = optionDict['latMin']
+    #             lamax = optionDict['latMax']
 
-                osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
-                payload += "," + parseOpenSky(osResult)
-                currentOpenSkyRecord = payload
+    #             osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
+    #             payload += "," + parseOpenSky(osResult)
+    #             currentOpenSkyRecord = payload
+    #             print(osResult)
 
-            else:
-                payload += currentOpenSkyRecord
-    except:
-        pass
+    #         else:
+    #             payload += currentOpenSkyRecord
+    # except:
+    #     pass
 
+    payload += currentOpenSkyRecord
     payload += ']}'
 
-    return payload,currentOpenSkyRecord
+    return payload
 
-
-
+def openSkyFetchThread():
+    print("OSFT")
+    global currentOpenSkyRecord
+    osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
+    currentOpenSkyRecord = parseOpenSky(osResult)
 
 ##########################################################################################
 # SERVER SETUP
@@ -166,10 +183,6 @@ handler = http.server.BaseHTTPRequestHandler
 demoData,demoDataLength = readDemoLoopDataFromFile()
 
 # Pull in the read me
-# readMe = readInReadMe()
-# nope = readInNope()
-
-currentOpenSkyRecord = ""
 
 # Create class and specify how to handle GET requests
 class Serv(handler):
@@ -188,6 +201,11 @@ class Serv(handler):
     def do_GET(self):
         # gets information about the request from the path used
         global currentOpenSkyRecord
+        global lomin
+        global lomax
+        global lamin
+        global lamax
+
         urlPath = str(self.path)[1:]
         pathArr = []
                 
@@ -231,7 +249,14 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                payload,currentOpenSkyRecord = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
+                lomin = optionDict['lngMin']
+                lomax = optionDict['lngMax']
+                lamin = optionDict['latMin']
+                lamax = optionDict['latMax']
+
+                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
+
+                print("still good")
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
@@ -253,21 +278,3 @@ myServer = http.server.HTTPServer((hostName, hostPort), Serv)
 
 # Run the server
 run()
-
-
-# 40.632118, -76.623080
-# 38.938079, -73.828576
-
-# lamin	float	lower bound for the latitude in decimal degrees
-# lomin	float	lower bound for the longitude in decimal degrees
-# lamax	float	upper bound for the latitude in decimal degrees
-# lomax	float	upper bound for the longitude in decimal degrees
-
-# https://opensky-network.org/api/states/all?lamin=38.938079&lamax=40.632118&lomin=-76.623080&lomax=-73.828576
-
-
-# Params for requests
-
-# airlines
-# prediction
-# demoLoop
