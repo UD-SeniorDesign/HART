@@ -161,6 +161,7 @@ def openSkyFetchThread():
     if (lomin+lomax+lamin+lamax != "0000"):
         osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
         currentOpenSkyRecord = parseOpenSky(osResult)
+        print("############################################### NEW FLIGHT UPDATE ###############################################")
         print(osResult)
 
 ##########################################################################################
