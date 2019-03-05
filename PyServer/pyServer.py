@@ -29,12 +29,12 @@ def run():
     print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
     print("server:",handler.server_version,"system:",handler.sys_version)
 
-    # t1 = threading.Thread(target=ticker)
+    t1 = threading.Thread(target=ticker)
     # t2 = threading.Thread(target=myServer.serve_forever)
     try:
-        # t1.start()
+        t1.start()
         # t2.start()
-        # t1.join()
+        t1.join()
         # t2.join()
         myServer.serve_forever()
     except KeyboardInterrupt:
@@ -65,13 +65,9 @@ def ticker():
     global prevTickTime
     global tick
 
-    currentTime = dt.now()
-    timeDif = currentTime - prevTickTime
-    
-    if (currentTime != prevTickTime):
-        tick += timeDif.seconds
-        prevTickTime = currentTime
-        print("TICK: " + str(tick) + " | TIME:" + str(dt.now()))
+    tick += 1
+    print("tick:" +str(tick))
+
     return
 
 def readDemoLoopDataFromFile():
