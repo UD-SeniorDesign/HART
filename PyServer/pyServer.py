@@ -40,7 +40,7 @@ class tickThread(Thread):
         while not self.stopped.wait(1):
             print(str(tick) + " | " + str(dt.now()))
             tick += 1
-            print(currentOpenSkyRecord)
+            #print(currentOpenSkyRecord)
 
 class openSkyThread(Thread):
     def __init__(self, event):
@@ -146,8 +146,9 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
 
     if ('commercialFlights' in optionDict):
         print("Evaluating commercialFlights option")
-        if (optionDict['commercialFlights'] == 1):
-            payload += "," + currentOpenSkyRecord
+        if (optionDict['commercialFlights'] == '1'):
+        	if (currentOpenSkyRecord != ""):    
+			payload += "," + currentOpenSkyRecord
     else:
         print("No commercialFlights option found")
     
@@ -163,7 +164,6 @@ def openSkyFetchThread():
         osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
         currentOpenSkyRecord = parseOpenSky(osResult)
         print("############################################### NEW FLIGHT UPDATE ###############################################")
-        print(osResult)
 
 ##########################################################################################
 # SERVER SETUP
