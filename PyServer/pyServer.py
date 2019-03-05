@@ -113,16 +113,18 @@ def run():
 def parseOpenSky(osResult):
     payload = ""
 
-    for i in osResult['states']:
-    
-        elevation = str(i[7])
+    try:
+        for i in osResult['states']:
+        
+            elevation = str(i[7])
 
-        if ((elevation == "None") or (len(elevation) == 0)):
-            elevation = str(i[13])
+            if ((elevation == "None") or (len(elevation) == 0)):
+                elevation = str(i[13])
 
-        if (elevation != "None"):
-            payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
-
+            if (elevation != "None"):
+                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
+    except:
+        print(osResult)
     return payload[:-1]
 
 
@@ -250,10 +252,13 @@ class Serv(handler):
                 print("option dictionary created with " + str(numOpt) + " options.")
 
                 if ('commercialFlights' in optionDict):
+                    print("Updating lats and longs")
+                    print(lomin,lomax,lamin,lamax)
                     lomin = optionDict['lngMin']
                     lomax = optionDict['lngMax']
                     lamin = optionDict['latMin']
                     lamax = optionDict['latMax']
+                    print(lomin,lomax,lamin,lamax)
 
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
 
