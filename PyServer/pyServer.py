@@ -40,6 +40,7 @@ class tickThread(Thread):
         while not self.stopped.wait(1):
             print(str(tick) + " | " + str(dt.now()))
             tick += 1
+            #print(currentOpenSkyRecord)
 
 class openSkyThread(Thread):
     def __init__(self, event):
@@ -92,6 +93,7 @@ def run():
     print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
     print("server:",handler.server_version,"system:",handler.sys_version)
 
+
     tickStopFlag = Event()
     tThread = tickThread(tickStopFlag)
     tThread.start()
@@ -111,53 +113,47 @@ def run():
 def parseOpenSky(osResult):
     payload = ""
 
-    for i in osResult['states']:
-    
-        elevation = str(i[7])
+    try:
+        for i in osResult['states']:
+        
+            elevation = str(i[7])
 
-        if ((elevation == "None") or (len(elevation) == 0)):
-            elevation = str(i[13])
+            if ((elevation == "None") or (len(elevation) == 0)):
+                elevation = str(i[13])
 
-        if (elevation != "None"):
-            payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
-
+            if (elevation != "None"):
+                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
+    except:
+        print(osResult)
     return payload[:-1]
+
 
 def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord):
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
-    if (optionDict['demoLoop'] == '1'):
-        demoIndex = tick % demoDataLength
-        payload += '{"id":"demoLoop",'
-        payload += demoData[demoIndex].rstrip(",")[1:]
+    if ('demoLoop' in optionDict):
+        print("Evaluating demoLoop option...")
+        if (optionDict['demoLoop'] == '1'):
+            demoIndex = tick % demoDataLength
+            payload += '{"id":"demoLoop",'
+            payload += demoData[demoIndex].rstrip(",")[1:]
 
-        #addinga second target
-        demoIndex2 = (tick+30) % demoDataLength
-        payload += ',{"id":"demoLoop2",'
-        payload += demoData[demoIndex2].rstrip(",")[1:]
+            #addinga second target
+            demoIndex2 = (tick+30) % demoDataLength
+            payload += ',{"id":"demoLoop2",'
+            payload += demoData[demoIndex2].rstrip(",")[1:]
+    else:
+        print("No demoLoop option found.")
 
-        
-    # try:
-    #     if (optionDict['commercialFlights'] == '1'):
-
-    #         if ((tick%10) == 1):
-    #             lomin = optionDict['lngMin']
-    #             lomax = optionDict['lngMax']
-    #             lamin = optionDict['latMin']
-    #             lamax = optionDict['latMax']
-
-    #             osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
-    #             payload += "," + parseOpenSky(osResult)
-    #             currentOpenSkyRecord = payload
-    #             print(osResult)
-
-    #         else:
-    #             payload += currentOpenSkyRecord
-    # except:
-    #     pass
-
-    payload += "," + currentOpenSkyRecord
+    if ('commercialFlights' in optionDict):
+        print("Evaluating commercialFlights option")
+        if (optionDict['commercialFlights'] == '1'):
+            if (currentOpenSkyRecord != ""):
+                payload += "," + currentOpenSkyRecord
+    else:
+        print("No commercialFlights option found")
+    
     payload += ']}'
 
     return payload
@@ -169,6 +165,7 @@ def openSkyFetchThread():
     if (lomin+lomax+lamin+lamax != "0000"):
         osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
         currentOpenSkyRecord = parseOpenSky(osResult)
+        print("############################################### NEW FLIGHT UPDATE ###############################################")
 
 ##########################################################################################
 # SERVER SETUP
@@ -233,7 +230,7 @@ class Serv(handler):
             self.send_header('Content-type','text/html')
             self.end_headers()
             self.wfile.write(bytes(nope,'utf-8'))
-            print("response sent:  bad format")
+            print("response sent: missing 'data'")
 
         else:
             try:
@@ -251,14 +248,19 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                lomin = optionDict['lngMin']
-                lomax = optionDict['lngMax']
-                lamin = optionDict['latMin']
-                lamax = optionDict['latMax']
+                numOpt = len(optionDict)
+                print("option dictionary created with " + str(numOpt) + " options.")
+
+                if ('commercialFlights' in optionDict):
+                    print("Updating lats and longs")
+                    print(lomin,lomax,lamin,lamax)
+                    lomin = optionDict['lngMin']
+                    lomax = optionDict['lngMax']
+                    lamin = optionDict['latMin']
+                    lamax = optionDict['latMax']
+                    print(lomin,lomax,lamin,lamax)
 
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
-
-                print("still good")
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
@@ -273,7 +275,7 @@ class Serv(handler):
                 self.send_header('Content-type','text/html')
                 self.end_headers()
                 self.wfile.write(bytes(nope,'utf-8'))
-                print("response sent:  bad format")
+                print("response sent: error")
 
 # Create a server instance
 myServer = http.server.HTTPServer((hostName, hostPort), Serv)
