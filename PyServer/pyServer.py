@@ -161,7 +161,7 @@ def openSkyFetchThread():
     if (lomin+lomax+lamin+lamax != "0000"):
         osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
         currentOpenSkyRecord = parseOpenSky(osResult)
-        print(len(osResult))
+        print(osResult)
 
 ##########################################################################################
 # SERVER SETUP
@@ -254,8 +254,6 @@ class Serv(handler):
                     lamax = optionDict['latMax']
 
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
-
-                print("still good")
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
