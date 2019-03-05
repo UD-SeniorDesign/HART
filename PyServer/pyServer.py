@@ -129,38 +129,21 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
+    if (optionDict['demoLoop']):
+        if (optionDict['demoLoop'] == '1'):
+            demoIndex = tick % demoDataLength
+            payload += '{"id":"demoLoop",'
+            payload += demoData[demoIndex].rstrip(",")[1:]
 
-    if (optionDict['demoLoop'] == '1'):
-        demoIndex = tick % demoDataLength
-        payload += '{"id":"demoLoop",'
-        payload += demoData[demoIndex].rstrip(",")[1:]
+            #addinga second target
+            demoIndex2 = (tick+30) % demoDataLength
+            payload += ',{"id":"demoLoop2",'
+            payload += demoData[demoIndex2].rstrip(",")[1:]
 
-        #addinga second target
-        demoIndex2 = (tick+30) % demoDataLength
-        payload += ',{"id":"demoLoop2",'
-        payload += demoData[demoIndex2].rstrip(",")[1:]
-
-        
-    # try:
-    #     if (optionDict['commercialFlights'] == '1'):
-
-    #         if ((tick%10) == 1):
-    #             lomin = optionDict['lngMin']
-    #             lomax = optionDict['lngMax']
-    #             lamin = optionDict['latMin']
-    #             lamax = optionDict['latMax']
-
-    #             osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
-    #             payload += "," + parseOpenSky(osResult)
-    #             currentOpenSkyRecord = payload
-    #             print(osResult)
-
-    #         else:
-    #             payload += currentOpenSkyRecord
-    # except:
-    #     pass
-
-    payload += "," + currentOpenSkyRecord
+    if (optionDict['commercialFlight']):
+        if (optionDict['commercialFlight'] == 1):
+            payload += "," + currentOpenSkyRecord
+    
     payload += ']}'
 
     return payload
