@@ -129,7 +129,7 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
-    if (optionDict['demoLoop']):
+    if ('demoLoop' in optionDict):
         if (optionDict['demoLoop'] == '1'):
             demoIndex = tick % demoDataLength
             payload += '{"id":"demoLoop",'
@@ -140,7 +140,7 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
             payload += ',{"id":"demoLoop2",'
             payload += demoData[demoIndex2].rstrip(",")[1:]
 
-    if (optionDict['commercialFlight']):
+    if ('commercialFlight' in optionDict):
         if (optionDict['commercialFlight'] == 1):
             payload += "," + currentOpenSkyRecord
     
