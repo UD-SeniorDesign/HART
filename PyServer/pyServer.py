@@ -161,6 +161,7 @@ def openSkyFetchThread():
     if (lomin+lomax+lamin+lamax != "0000"):
         osResult = getOpenSkyInfo(lomin,lomax,lamin,lamax)
         currentOpenSkyRecord = parseOpenSky(osResult)
+        print(len(osResult))
 
 ##########################################################################################
 # SERVER SETUP
@@ -225,7 +226,7 @@ class Serv(handler):
             self.send_header('Content-type','text/html')
             self.end_headers()
             self.wfile.write(bytes(nope,'utf-8'))
-            print("response sent:  bad format")
+            print("response sent: missing 'data'")
 
         else:
             try:
@@ -243,10 +244,14 @@ class Serv(handler):
                     tmpO = o.split("=")
                     optionDict[tmpO[0]] = tmpO[1]
 
-                lomin = optionDict['lngMin']
-                lomax = optionDict['lngMax']
-                lamin = optionDict['latMin']
-                lamax = optionDict['latMax']
+                numOpt = len(optionDict)
+                print("option dictionary created with " + str(numOpt) + " options.")
+
+                if ('commercialFlights' in optionDict):
+                    lomin = optionDict['lngMin']
+                    lomax = optionDict['lngMax']
+                    lamin = optionDict['latMin']
+                    lamax = optionDict['latMax']
 
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
 
@@ -265,7 +270,7 @@ class Serv(handler):
                 self.send_header('Content-type','text/html')
                 self.end_headers()
                 self.wfile.write(bytes(nope,'utf-8'))
-                print("response sent:  bad format")
+                print("response sent: error")
 
 # Create a server instance
 myServer = http.server.HTTPServer((hostName, hostPort), Serv)
