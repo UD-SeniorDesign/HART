@@ -140,7 +140,7 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
             payload += ',{"id":"demoLoop2",'
             payload += demoData[demoIndex2].rstrip(",")[1:]
 
-    if ('commercialFlight' in optionDict):
+    if ('commercialFlights' in optionDict):
         if (optionDict['commercialFlight'] == 1):
             payload += "," + currentOpenSkyRecord
     
