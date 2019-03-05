@@ -40,6 +40,7 @@ class tickThread(Thread):
         while not self.stopped.wait(1):
             print(str(tick) + " | " + str(dt.now()))
             tick += 1
+            print(currentOpenSkyRecord)
 
 class openSkyThread(Thread):
     def __init__(self, event):
