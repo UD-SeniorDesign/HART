@@ -21,10 +21,10 @@ tick = 0
 prevTickTime = dt.now()
 demoLoopData = []
 currentOpenSkyRecord = ""
-lomin = 0
-lomax = 0
-lamin = 0
-lamax = 0
+lomin = '0'
+lomax = '0'
+lamin = '0'
+lamax = '0'
 
 ##########################################################################################
 # FUNCTIONS
