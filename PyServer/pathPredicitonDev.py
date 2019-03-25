@@ -135,25 +135,54 @@ def pathPredictPoly(locHist, numPnts):
     # print(fitz)
     return fitx,fity,fitz
 
-for f in history:
-    print(str(f['Latitude']) + ',' + str(f['Longitude'])) # + "," + str(f['Latitude']) + ":" + str(f['Longitude'])
+# for f in history:
+#     print(str(f['Latitude']) + ',' + str(f['Longitude'])) # + "," + str(f['Latitude']) + ":" + str(f['Longitude'])
 
 
-fX,fY,fZ = pathPredictPoly(history,10)
+# fX,fY,fZ = pathPredictPoly(history,10)
 
-for i in range(10,20):
-    ecks,whi,zee = getPoint(fX,fY,fZ,i,3)
-    print(ecks,end=", ")
-    print(whi)
+# for i in range(10,20):
+#     ecks,whi,zee = getPoint(fX,fY,fZ,i,3)
+#     print(ecks,end=", ")
+#     print(whi)
 
-print("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
+# print("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
 
-for f in history2:
-    print(str(f['Latitude']) + ',' + str(f['Longitude'])) # + "," + str(f['Latitude']) + ":" + str(f['Longitude'])
+# for f in history2:
+#     print(str(f['Latitude']) + ',' + str(f['Longitude'])) # + "," + str(f['Latitude']) + ":" + str(f['Longitude'])
 
-fX,fY,fZ = pathPredictPoly(history2,10)
+# fX,fY,fZ = pathPredictPoly(history2,10)
 
-for i in range(10,20):
-    ecks,whi,zee = getPoint(fX,fY,fZ,i,3)
-    print(ecks,end=", ")
-    print(whi)
+# for i in range(10,20):
+#     ecks,whi,zee = getPoint(fX,fY,fZ,i,3)
+#     print(ecks,end=", ")
+#     print(whi)
+
+fin = open("openSkyRecords.txt",'r')
+osr = fin.readlines()
+fin.close()
+
+OSRsplit = osr[0].split('},{')
+adjustedOSR = []
+
+for o in OSRsplit:
+    tmpLine = ''
+    if o[0] != "{":
+        tmpLine += "{"
+    tmpLine += o
+    if o[-1] != "}":
+        tmpLine += "}"
+    adjustedOSR.append(tmpLine)
+
+# 1,2,4
+hArr = []
+for i in adjustedOSR:
+    tmpArr = []
+    x = i.split(",")
+    tmpArr.append(x[1].split(":")[1])
+    tmpArr.append(x[2].split(":")[1])
+    tmpArr.append(x[4].split(":")[1].replace("}","").replace("\n",""))
+    hArr.append(tmpArr)
+
+for h in hArr:
+    print(h)
