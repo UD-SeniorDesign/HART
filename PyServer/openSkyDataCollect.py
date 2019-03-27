@@ -31,6 +31,7 @@ def parseOpenSky(osResult):
     return payload[:-1]
 
 for i in range(50):
+    os = getOpenSkyInfo(-76.623080,-73.828576,38.938079,40.632118)
     result = parseOpenSky(os)
     outFile = open("openSkyRecords.txt","a")
     outFile.write(result+"\n")

@@ -122,7 +122,7 @@ def parseOpenSky(osResult):
                 elevation = str(i[13])
 
             if (elevation != "None"):
-                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + "},"
+                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + ',"TrueTrack":' + str(i[10])+ "},"
     except:
         print(osResult)
     return payload[:-1]

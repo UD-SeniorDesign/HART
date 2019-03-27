@@ -158,31 +158,82 @@ def pathPredictPoly(locHist, numPnts):
 #     print(ecks,end=", ")
 #     print(whi)
 
+
+################################################################################################
+###### For testing against commercial flight data
+################################################################################################
+
 fin = open("openSkyRecords.txt",'r')
 osr = fin.readlines()
 fin.close()
 
-OSRsplit = osr[0].split('},{')
-adjustedOSR = []
+osArr = []
 
-for o in OSRsplit:
-    tmpLine = ''
-    if o[0] != "{":
-        tmpLine += "{"
-    tmpLine += o
-    if o[-1] != "}":
-        tmpLine += "}"
-    adjustedOSR.append(tmpLine)
+for i in osr:
+    # print(i)
+    OSRsplit = i.split('},{')
+    adjustedOSR = []
 
-# 1,2,4
-hArr = []
-for i in adjustedOSR:
-    tmpArr = []
-    x = i.split(",")
-    tmpArr.append(x[1].split(":")[1])
-    tmpArr.append(x[2].split(":")[1])
-    tmpArr.append(x[4].split(":")[1].replace("}","").replace("\n",""))
-    hArr.append(tmpArr)
+    for o in OSRsplit:
+        tmpLine = ''
+        if o[0] != "{":
+            tmpLine += "{"
+        tmpLine += o
+        if o[-1] != "}":
+            tmpLine += "}"
+        adjustedOSR.append(tmpLine)
+    # print(adjustedOSR)
+    osArr.append(adjustedOSR)
 
-for h in hArr:
-    print(h)
+osHistory = []
+
+for a in osArr:
+    hArr = []
+    for i in a:
+        tmpArr = []
+        x = i.split(",")
+        tmpArr.append(x[1].split(":")[1])
+        tmpArr.append(x[2].split(":")[1])
+        tmpArr.append(x[4].split(":")[1].replace("}","").replace("\n",""))
+        hArr.append(tmpArr)
+    # print(hArr[0])
+    osHistory.append(hArr)
+
+testFlight =  []
+
+for o in osHistory:
+    dictArr = []
+    for i in o:
+        if i[2] != 'None':
+            lat = i[0]
+            lon = i[1]
+            ell = i[2]
+            tmpDict = dict()
+            tmpDict['Latitude'] = float(lat)
+            tmpDict['Longitude'] = float(lon)
+            tmpDict['Elevation'] = float(ell)
+            dictArr.append(tmpDict)
+    testFlight.append(dictArr)
+
+
+planeOneHist = []
+
+for i in testFlight:
+    planeOneHist.append(i[0])
+
+
+fX,fY,fZ = pathPredictPoly(planeOneHist[:10],10)
+
+for i in range(10):
+    ecks,whi,zee = getPoint(fX,fY,fZ,i,3)
+    print(ecks,end=", ")
+    print(whi,end=", ")
+    print(zee)
+
+for i in range(10,20):
+    print(planeOneHist[i])
+
+print("########################################")
+
+for i in range(10):
+    print(planeOneHist[i])
