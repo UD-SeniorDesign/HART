@@ -21,10 +21,14 @@ tick = 0
 prevTickTime = dt.now()
 demoLoopData = []
 currentOpenSkyRecord = ""
+currentSatelliteRecord = ""
 lomin = '0'
 lomax = '0'
 lamin = '0'
 lamax = '0'
+centerLat = '0'
+centerLng = '0'
+satRadius = '0'
 
 ##########################################################################################
 # FUNCTIONS
@@ -52,6 +56,15 @@ class openSkyThread(Thread):
         while not self.stopped.wait(10):
             openSkyFetchThread()
 
+class satelliteThread(Thread):
+    def __init__(self, event):
+        Thread.__init__(self)
+        self.stopped = event
+
+    def run(self):
+        global currentSatelliteRecord
+        while not self.stopped.wait(5):
+            satelliteFetchThread()
 
 def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     laminStr = 'lamin=' + str(lamin) + '&'
@@ -62,6 +75,9 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     r = requests.get('https://opensky-network.org/api/states/all?' + laminStr + lamaxStr + lominStr + lomaxStr)
     return r.json()
 
+def getSatInfo(cLat,cLng,satRad):
+    r = requests.get("https://www.n2yo.com/rest/v1/satellite/above/" + cLat + "/" + cLng + "/0/" + satRad + "/0/&apiKey=J63CHM-KJQD9M-D3BECE-3YXH")
+    return r.json()
 
 def readDemoLoopDataFromFile():
     fin = open("Data/fly-madison_GPSsimV0_d2018-12-03_t22-20-2.json",'r')
@@ -102,6 +118,10 @@ def run():
     osThread = openSkyThread(openSkyStopFlag)
     osThread.start()
 
+    satelliteStopFlag = Event()
+    satThread = satelliteThread(openSkyStopFlag)
+    satThread.start()
+
     try:
         myServer.serve_forever()
     except KeyboardInterrupt:
@@ -126,6 +146,10 @@ def parseOpenSky(osResult):
     except:
         print(osResult)
     return payload[:-1]
+
+def parseSat(satResult):
+    return 0
+
 
 
 def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord):
@@ -167,6 +191,16 @@ def openSkyFetchThread():
         currentOpenSkyRecord = parseOpenSky(osResult)
         print("############################################### NEW FLIGHT UPDATE ###############################################")
 
+def satelliteFetchThread():
+    global currentSatelliteRecord
+    print("satFT")
+    print(centerLat,centerLng,satRadius)
+    if (centerLat+centerLng+satRadius != "000"):
+        satResult = getSatInfo(centerLat,centerLng,satRadius)
+        currentSatelliteRecord = parseSat(satResult)
+        print("############################################# NEW SATELLITE UPDATE ###############################################")
+
+
 ##########################################################################################
 # SERVER SETUP
 ##########################################################################################
@@ -204,6 +238,9 @@ class Serv(handler):
         global lomax
         global lamin
         global lamax
+        global centerLat
+        global centerLng
+        global satRadius
 
         urlPath = str(self.path)[1:]
         pathArr = []
@@ -259,6 +296,13 @@ class Serv(handler):
                     lamin = optionDict['latMin']
                     lamax = optionDict['latMax']
                     print(lomin,lomax,lamin,lamax)
+                
+                if ('satellite' in optionDict):
+                    print("Updating lat/long center point and radius for satellites")
+                    centerLat = optionDict['centerLat']
+                    centerLng = optionDict['centerLng']
+                    satRadius = optionDict['satRadius']
+                    print(centerLat,centerLng,satRadius)
 
                 payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
 
