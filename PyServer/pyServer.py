@@ -142,7 +142,7 @@ def parseOpenSky(osResult):
                 elevation = str(i[13])
 
             if (elevation != "None"):
-                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + ',"TrueTrack":' + str(i[10])+ "},"
+                payload += '{"id":"' + i[0] + "-" + i[1].rstrip() + '","Type":"Aircraft","Latitude":' + str(i[6]) + ',"Longitude":' + str(i[5]) + ',"Time":"' + str(i[4]) + '","Elevation":' + elevation + ',"TrueTrack":' + str(i[10])+ "},"
     except:
         print(osResult)
     return payload[:-1]
@@ -160,12 +160,12 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
         print("Evaluating demoLoop option...")
         if (optionDict['demoLoop'] == '1'):
             demoIndex = tick % demoDataLength
-            payload += '{"id":"demoLoop",'
+            payload += '{"id":"demoLoop","Type":"Demo",'
             payload += demoData[demoIndex].rstrip(",")[1:]
 
             #addinga second target
             demoIndex2 = (tick+30) % demoDataLength
-            payload += ',{"id":"demoLoop2",'
+            payload += ',{"id":"demoLoop2","Type":"Demo",'
             payload += demoData[demoIndex2].rstrip(",")[1:]
     else:
         print("No demoLoop option found.")

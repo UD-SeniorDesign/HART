@@ -11,7 +11,7 @@ def fetchSats():
 
 sats = fetchSats()['above']
 for s in sats:
-    parsed = "{\"id\":\"" + s['satname'] + "\",\"Latitude\":" + str(s['satlat']) +",\"Longitude\":" + str(s['satlng']) + ",\"Elevation\":" + str(s['satalt']) +"}"
+    parsed = "{\"id\":\"" + s['satname'] + "\",\"Type\":\"Sat\",\"Latitude\":" + str(s['satlat']) +",\"Longitude\":" + str(s['satlng']) + ",\"Elevation\":" + str(s['satalt']) +"}"
     print(parsed)
 
 
