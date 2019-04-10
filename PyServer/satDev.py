@@ -10,6 +10,7 @@ def fetchSats():
     return r.json()
 
 
+
 sats = fetchSats()['above']
 
 

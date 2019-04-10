@@ -285,11 +285,19 @@ class Serv(handler):
 
         else:
             try:
+                # find where the variables start
+                varStart = urlPath.find("?")
 
-                print(self.headers)
-                
-                optionDict = self.headers
-                print("length of dict: " + str(len(optionDict)))
+                # pull out variables from URL
+                opts = urlPath[varStart + 1:].split("&")        
+                print("OPTIONS RECEIVED: ",end="")
+                print(opts)
+
+                optionDict = dict()
+
+                for o in opts:
+                    tmpO = o.split("=")
+                    optionDict[tmpO[0]] = tmpO[1]
 
                 numOpt = len(optionDict)
                 print("option dictionary created with " + str(numOpt) + " options.")
