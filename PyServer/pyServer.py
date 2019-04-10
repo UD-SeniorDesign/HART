@@ -77,7 +77,7 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
 
 def getSatInfo(cLat,cLng,satRad):
     r = requests.get("https://www.n2yo.com/rest/v1/satellite/above/" + cLat + "/" + cLng + "/0/" + satRad + "/0/&apiKey=J63CHM-KJQD9M-D3BECE-3YXH")
-    return r.json()
+    return r.json()['above']
 
 def readDemoLoopDataFromFile():
     fin = open("Data/fly-madison_GPSsimV0_d2018-12-03_t22-20-2.json",'r')
@@ -148,11 +148,16 @@ def parseOpenSky(osResult):
     return payload[:-1]
 
 def parseSat(satResult):
-    return 0
+    parsed = ''
+
+    for s in satResult:
+        parsed += "{\"id\":\"" + s['satname'] + "\",\"Type\":\"Sat\",\"Latitude\":" + str(s['satlat']) +",\"Longitude\":" + str(s['satlng']) + ",\"Elevation\":" + str(s['satalt']) +"},"
+
+    return parsed[:-1]
 
 
 
-def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord):
+def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord):
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
@@ -163,7 +168,7 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
             payload += '{"id":"demoLoop","Type":"Demo",'
             payload += demoData[demoIndex].rstrip(",")[1:]
 
-            #addinga second target
+            #adding a second target
             demoIndex2 = (tick+30) % demoDataLength
             payload += ',{"id":"demoLoop2","Type":"Demo",'
             payload += demoData[demoIndex2].rstrip(",")[1:]
@@ -177,6 +182,14 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
                 payload += "," + currentOpenSkyRecord
     else:
         print("No commercialFlights option found")
+
+    if ('satellite' in optionDict):
+        print("Evaluating satellite option")
+        if (optionDict['satellite'] == '1'):
+            if (currentSatelliteRecord != ""):
+                payload += "," + currentSatelliteRecord
+    else:
+        print("No satellite option found")
     
     payload += ']}'
 
@@ -234,6 +247,7 @@ class Serv(handler):
     def do_GET(self):
         # gets information about the request from the path used
         global currentOpenSkyRecord
+        global currentSatelliteRecord
         global lomin
         global lomax
         global lamin
@@ -304,7 +318,7 @@ class Serv(handler):
                     satRadius = optionDict['satRadius']
                     print(centerLat,centerLng,satRadius)
 
-                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord)
+                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord)
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
