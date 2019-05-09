@@ -13,6 +13,11 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import threading
 from threading import Timer,Thread,Event
+import glob
+import csv
+from google.protobuf import json_format
+from google.transit import gtfs_realtime_pb2
+
 
 ##########################################################################################
 # CONSTANTS
@@ -22,13 +27,22 @@ prevTickTime = dt.now()
 demoLoopData = []
 currentOpenSkyRecord = ""
 currentSatelliteRecord = ""
+currentMTARecord = ""
 lomin = '0'
 lomax = '0'
 lamin = '0'
 lamax = '0'
+
+# Satellites
 centerLat = '0'
 centerLng = '0'
 satRadius = '0'
+
+# MTA stuff
+CITY_GRIDS = [['newyork',40.492014,40.924276,-74.269512,-73.737244]]
+MTA_API_KEY = "d8d8bf77573b91e6462358cf6ec5a755"
+MTA_FEED_IDS = ["1","26","16","21","2","11","31","36","51"]
+MTA_ENDPOINT = "http://datamine.mta.info/mta_esi.php?key=" + MTA_API_KEY + "&feed_id="
 
 ##########################################################################################
 # FUNCTIONS
@@ -66,6 +80,16 @@ class satelliteThread(Thread):
         while not self.stopped.wait(5):
             satelliteFetchThread()
 
+class mtaThread(Thread):
+    def __init__(self, event):
+        Thread.__init__(self)
+        self.stopped = event
+
+    def run(self):
+        global currentMTARecord
+        while not self.stopped.wait(5):
+            mtaFetchThread()
+
 def getOpenSkyInfo(lomin,lomax,lamin,lamax):
     laminStr = 'lamin=' + str(lamin) + '&'
     lamaxStr = 'lamax=' + str(lamax) + '&'
@@ -78,6 +102,37 @@ def getOpenSkyInfo(lomin,lomax,lamin,lamax):
 def getSatInfo(cLat,cLng,satRad):
     r = requests.get("https://www.n2yo.com/rest/v1/satellite/above/" + cLat + "/" + cLng + "/0/" + satRad + "/0/&apiKey=J63CHM-KJQD9M-D3BECE-3YXH")
     return r.json()['above']
+
+def getMTAInfo():
+    print("GETTING MTA INFO")
+    feed = gtfs_realtime_pb2.FeedMessage()
+    response = requests.get(MTA_ENDPOINT+MTA_FEED_IDS[1])
+    feed.ParseFromString(response.content)
+    trainLst = []
+
+    for entity in feed.entity:
+        if entity.HasField('trip_update'):
+            if ( entity.trip_update.stop_time_update):
+                trainLst.append([entity.id,entity.trip_update.trip.trip_id, entity.trip_update.stop_time_update])
+
+
+    # print(trainLst)
+    return trainLst
+
+def readStations():
+    fin = open("MTA_stations.csv","r")
+    lines = fin.readlines()
+    fin.close()
+    return lines    
+
+def parseStations(lines):
+    stationLocations = []
+    for line in lines:
+        tmpLine = line.strip('\n').split(",")
+        stationLocations.append([tmpLine[2],tmpLine[5],tmpLine[-2],tmpLine[-1]])
+
+    return stationLocations
+
 
 def readDemoLoopDataFromFile():
     fin = open("Data/fly-madison_GPSsimV0_d2018-12-03_t22-20-2.json",'r')
@@ -109,7 +164,6 @@ def run():
     print(time.asctime(),"Server Started - %s:%s" % (hostName,hostPort))
     print("server:",handler.server_version,"system:",handler.sys_version)
 
-
     tickStopFlag = Event()
     tThread = tickThread(tickStopFlag)
     tThread.start()
@@ -119,8 +173,12 @@ def run():
     osThread.start()
 
     satelliteStopFlag = Event()
-    satThread = satelliteThread(openSkyStopFlag)
+    satThread = satelliteThread(satelliteStopFlag)
     satThread.start()
+
+    mtaStopFlag = Event()
+    mThread = mtaThread(mtaStopFlag)
+    mThread.start()
 
     try:
         myServer.serve_forever()
@@ -155,9 +213,32 @@ def parseSat(satResult):
 
     return parsed[:-1]
 
+def parseMTA(trainLst,stations):
+    print("PARSING MTA")
+    stopsJSON = '{"id":"Public Transit","Type":"Train","Latitude":"0","Longitude":"0","Time":"0","Elevation":"0","UTME":"0","UTMN":"0","UTMZ":"0","TrueTrack":"0","stops":['#"{\"stops\":["
+    for s in stations:
+        tmpJSON = "{\"stationId\":\"" + s[0] + "\",\"stationName\":\"" + s[1] + "\",\"latitude\":\""+ s[2] + "\",\"longitude\":\""+ s[3] +"\",\"updates\":["
+        for t in trainLst:
+            tAttr = str(t).split(",")
+      
+            if (s[0] in tAttr[2]):
+                tmpInfo = tAttr[2].split("\n")
+                arriveDepart = "{\"arrive\":\"" + tmpInfo[1][7:] + "\", \"depart\":\"" + tmpInfo[4][7:] + "\"}"
+                tmpJSON += "{\"train\":\"" + tAttr[0].lstrip("[").replace("\'","") + "\",\"line\":\"" + tAttr[1].replace("'","") + "\",\"arriveDepart\":" + arriveDepart +"},"
+            
+        tmpJSON = tmpJSON.rstrip(",")
+        tmpJSON += "]},"
+    
+        if ('[]' not in tmpJSON):
+            stopsJSON += tmpJSON
+    stopsJSON = stopsJSON[:-1] 
+    stopsJSON += "]}"
+
+    # print(stopsJSON)
+    return stopsJSON
 
 
-def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord):
+def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord,currentMTARecord):
     #"http://localhost:9999/data?demoLoop=1&commercialFlights=1&lngMin=-76.623080&lngMax=-73.828576&latMin=38.938079&latMax=40.632118"
     payload = '{"tick":' + str(tick) + ',"targets":['
 
@@ -190,6 +271,15 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
                 payload += "," + currentSatelliteRecord
     else:
         print("No satellite option found")
+
+    if ('publicTransit' in optionDict):
+        print("Evaluating publicTransit option")
+        if (optionDict['publicTransit'] == '1'):
+            if (currentMTARecord != ""):
+                payload += "," + currentMTARecord
+    else:
+        print("No publicTransit option found")
+
     
     payload += ']}'
 
@@ -213,6 +303,43 @@ def satelliteFetchThread():
         currentSatelliteRecord = parseSat(satResult)
         print("############################################# NEW SATELLITE UPDATE ###############################################")
 
+def mtaFetchThread():
+    global currentMTARecord
+    global stations
+    print("mtaFT")
+    print(lomin,lomax,lamin,lamax)
+    if (lomin+lomax+lamin+lamax != "0000"):
+        # print("getting train list")
+        trainLst = getMTAInfo()
+        # print("parsing trainlist")
+        currentMTARecord = parseMTA(trainLst,stations)
+        # print(currentMTARecord)
+        print("############################################# NEW MTA UPDATE ###############################################")
+    print("yup")
+
+def isBetween(check,mn,mx,):
+    if (((check > mn) and (check < mx)) or ((check > mn) and (check < mx))):
+        return True
+    else:
+        return False
+
+def inCity(mapGrid,cityGrids):
+    for c in cityGrids:
+        latChk = False
+        lngChk = False
+        for line in range(2):
+            if (isBetween(mapGrid[line],c[1],c[2])):
+                latChk = True
+            print("lat:" + str(latChk))
+        for line in range(2,4):
+            if (isBetween(mapGrid[line],c[3],c[4])):
+                lngChk = True
+            print("lng:" + str(lngChk))
+        
+        if (latChk and lngChk):
+            return c[0]
+
+    return False
 
 ##########################################################################################
 # SERVER SETUP
@@ -248,6 +375,7 @@ class Serv(handler):
         # gets information about the request from the path used
         global currentOpenSkyRecord
         global currentSatelliteRecord
+        global currentMTARecord
         global lomin
         global lomax
         global lamin
@@ -310,7 +438,10 @@ class Serv(handler):
                     satRadius = optionDict['satRadius']
                     print(centerLat,centerLng,satRadius)
 
-                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord)
+                if('publicTransit' in optionDict):
+                    print("public transit in options")
+
+                payload = payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRecord,currentSatelliteRecord,currentMTARecord)
 
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
@@ -329,6 +460,9 @@ class Serv(handler):
 
 # Create a server instance
 myServer = http.server.HTTPServer((hostName, hostPort), Serv)
+
+lines = readStations()
+stations = parseStations(lines)
 
 # Run the server
 run()
