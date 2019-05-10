@@ -217,7 +217,7 @@ def parseMTA(trainLst,stations):
     print("PARSING MTA")
     stopsJSON = '{"id":"Public Transit","Type":"Train","Latitude":"0","Longitude":"0","Time":"0","Elevation":"0","UTME":"0","UTMN":"0","UTMZ":"0","TrueTrack":"0","stops":['#"{\"stops\":["
     for s in stations:
-        tmpJSON = "{\"stationId\":\"" + s[0] + "\",\"stationName\":\"" + s[1] + "\",\"latitude\":\""+ s[2] + "\",\"longitude\":\""+ s[3] +"\",\"updates\":["
+        tmpJSON = "{\"stationId\":\"" + s[0] + "\",\"stationName\":\"" + s[1] + "\",\"Latitude\":\""+ s[2] + "\",\"Longitude\":\""+ s[3] +"\",\"updates\":["
         for t in trainLst:
             tAttr = str(t).split(",")
       
@@ -275,6 +275,7 @@ def payloadBuilder(optionDict,demoLoopData,demoDataLength,tick,currentOpenSkyRec
     if ('publicTransit' in optionDict):
         print("Evaluating publicTransit option")
         if (optionDict['publicTransit'] == '1'):
+            # if inCity()
             if (currentMTARecord != ""):
                 payload += "," + currentMTARecord
     else:
